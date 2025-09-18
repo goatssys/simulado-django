@@ -1,41 +1,15 @@
 require('dotenv').config();
-const axios = require('axios');
 const fs = require('fs').promises;
 const path = require('path');
 
-// Configuração do ngrok
-const NGROK_API_KEY = process.env.NGROK_API_KEY;
-
-async function getNgrokUrl() {
-    try {
-        const response = await axios.get('https://api.ngrok.com/tunnels', {
-            headers: {
-                'Authorization': `Bearer ${NGROK_API_KEY}`,
-                'Ngrok-Version': '2'
-            }
-        });
-
-        const tunnels = response.data.tunnels;
-        if (tunnels && tunnels.length > 0) {
-            // Pega a primeira URL pública disponível
-            return tunnels[0].public_url;
-        }
-        throw new Error('Nenhum túnel ativo encontrado');
-    } catch (error) {
-        console.error('Erro ao buscar URL do ngrok:', error.message);
-        throw error;
-    }
-}
-
 async function updateHtmlFile(url) {
-    // Ensure the URL is properly formatted
     const cleanUrl = url.replace(/:443$/, '').replace(/^http:/, 'https:');
-    
+
     const html = `<!DOCTYPE html>
 <html>
 <head>
     <meta http-equiv="refresh" content="0;url=${cleanUrl}">
-    <title>Redirecting to Ngrok URL</title>
+    <title>Redirecting to Tailscale URL</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -68,8 +42,11 @@ async function updateHtmlFile(url) {
 
 async function main() {
     try {
-        const ngrokUrl = await getNgrokUrl();
-        await updateHtmlFile(ngrokUrl);
+        const tailscaleUrl = process.env.TAILSCALE_URL; // Ex: http://meuapp.tailnet-xyz.ts.net:8000
+        if (!tailscaleUrl) {
+            throw new Error('Defina a variável TAILSCALE_URL no .env');
+        }
+        await updateHtmlFile(tailscaleUrl);
         console.log('HTML atualizado com sucesso!');
     } catch (error) {
         console.error('Erro:', error.message);
